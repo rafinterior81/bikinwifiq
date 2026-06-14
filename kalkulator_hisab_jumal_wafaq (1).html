@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator Hisab Jumal & Wafaq</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Amiri&family=Inter:wght@300;400;600&display=swap');
+        .font-arabic { font-family: 'Amiri', serif; }
+        .bg-scholarly { background-color: #0f172a; }
+        .text-gold { color: #c5a059; }
+        .border-gold { border-color: #c5a059; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen p-4 md:p-8">
+
+    <main class="max-w-xl mx-auto bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+        <div class="bg-scholarly p-6 text-white text-center">
+            <h1 class="text-2xl font-bold tracking-wide">Hisab Abajadun & Wafaq</h1>
+            <p class="text-gold text-sm italic mt-1">Studi Numerik Huruf & Khasiat Asmaul Husna</p>
+        </div>
+
+        <div class="p-6">
+            <div class="mb-6">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Pilih Asmaul Husna atau Ketik Manual:</label>
+                <select id="asmaulSelect" onchange="selectAsmaul()" class="w-full p-4 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-amber-500 outline-none mb-4">
+                    <option value="">-- Pilih Nama --</option>
+                </select>
+                <input type="text" id="arabicInput" placeholder="Contoh: يا لطيف" 
+                    class="w-full text-2xl p-4 border rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-arabic text-right">
+                <button onclick="calculateJumal()" class="w-full mt-4 bg-slate-900 text-white p-3 rounded-lg font-bold hover:bg-slate-800 transition">Hitung & Lihat Wafaq</button>
+            </div>
+
+            <div id="resultArea" class="hidden space-y-6">
+                <div class="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                    <p class="text-gray-600 text-sm">Total Nilai:</p>
+                    <div id="totalValue" class="text-4xl font-bold text-slate-900"></div>
+                </div>
+                
+                <!-- Area Khasiat -->
+                <div id="khasiatArea" class="p-4 bg-sky-50 rounded-lg border border-sky-100 hidden">
+                    <p class="text-sky-800 text-sm font-semibold mb-1">Catatan Historis / Khasiat:</p>
+                    <p id="khasiatText" class="text-sky-900 text-sm italic"></p>
+                </div>
+
+                <div id="breakdown" class="text-sm text-gray-700 border-t pt-4">
+                    <p class="font-semibold mb-2">Perincian:</p>
+                    <div id="letterBreakdown" class="flex flex-wrap gap-2"></div>
+                </div>
+
+                <div id="wafaqArea" class="border-t pt-6">
+                    <p class="font-semibold text-gray-700 mb-4">Wafaq Al-Khali (3x3):</p>
+                    <div id="wafaqGrid" class="grid grid-cols-3 gap-2 max-w-[240px] mx-auto mb-6"></div>
+                    
+                    <div class="bg-gray-50 p-4 rounded-lg border text-xs text-gray-600">
+                        <p class="font-bold text-slate-900 mb-2">Pembuktian (Konstanta ١٥):</p>
+                        <p>Baris ١: ٤ + ٩ + ٢ = ١٥</p>
+                        <p>Kolom ١: ٤ + ٣ + ٨ = ١٥</p>
+                        <p>Diagonal: ٤ + ٥ + ٦ = ١٥</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="px-6 pb-6 text-xs text-gray-400">
+            <p>*Catatan: Informasi khasiat merupakan bagian dari tradisi literatur klasik dan diamalkan sebagai bentuk riyadhah spiritual.</p>
+        </div>
+    </main>
+
+    <script>
+        const abjadMap = {'ا': 1, 'ب': 2, 'ج': 3, 'د': 4, 'ه': 5, 'و': 6, 'ز': 7, 'ح': 8, 'ط': 9, 'ي': 10, 'ك': 20, 'ل': 30, 'م': 40, 'ن': 50, 'س': 60, 'ع': 70, 'ف': 80, 'ص': 90, 'ق': 100, 'ر': 200, 'ش': 300, 'ت': 400, 'ث': 500, 'خ': 600, 'ذ': 700, 'ض': 800, 'ظ': 900, 'غ': 1000};
+        const easternArabic = ['','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+
+        const asmaulHusna = {
+            "Ar-Rahman": { arab: "الرحمن", value: 298, khasiat: "Diamalkan untuk melembutkan hati yang keras dan memperoleh kasih sayang Allah." },
+            "Ar-Rahim": { arab: "الرحيم", value: 258, khasiat: "Sering dibaca untuk mendapatkan perlindungan dan kasih sayang dari segala makhluk." },
+            "Al-Malik": { arab: "الملك", value: 90, khasiat: "Untuk kewibawaan dan kemuliaan di mata manusia." },
+            "Al-Quddus": { arab: "القدوس", value: 170, khasiat: "Untuk menyucikan hati dari penyakit-penyakit batin." },
+            "As-Salam": { arab: "السلام", value: 131, khasiat: "Diamalkan untuk kedamaian batin dan keselamatan dari marabahaya." },
+            "Al-Mu'min": { arab: "المؤمن", value: 136, khasiat: "Untuk keamanan dan perlindungan dari kejahatan yang tidak terlihat." },
+            "Al-Muhaimin": { arab: "المهيمن", value: 145, khasiat: "Untuk mendapatkan cahaya hati dan kejernihan pemikiran." },
+            "Al-'Aziz": { arab: "العزيز", value: 94, khasiat: "Untuk kehormatan diri dan kekuatan dalam menghadapi tantangan hidup." },
+            "Al-Jabbar": { arab: "الجبار", value: 206, khasiat: "Untuk kekuasaan dan perlindungan dari orang yang zalim." },
+            "Al-Mutakabbir": { arab: "المتكبر", value: 662, khasiat: "Untuk kemuliaan derajat dan pengaruh yang baik." },
+            "Al-Khaliq": { arab: "الخالق", value: 731, khasiat: "Untuk menerangi hati dengan pemahaman ilmu." },
+            "Al-Bari'": { arab: "البارئ", value: 213, khasiat: "Untuk kesehatan dan kemudahan dalam urusan." },
+            "Al-Mushawwir": { arab: "المصور", value: 336, khasiat: "Untuk kesempurnaan akhlak dan rupa." },
+            "Al-Ghaffar": { arab: "الغفار", value: 1281, khasiat: "Untuk pengampunan dosa dan ketenangan batin." },
+            "Al-Qahhar": { arab: "القهار", value: 306, khasiat: "Untuk menundukkan hawa nafsu dan musuh." },
+            "Al-Wahhab": { arab: "الوهاب", value: 14, khasiat: "Untuk meluaskan rezeki dan keberkahan." },
+            "Ar-Razzaq": { arab: "الرزاق", value: 308, khasiat: "Untuk kelapangan rezeki yang tidak terduga." },
+            "Al-Fattah": { arab: "الفتاح", value: 489, khasiat: "Untuk membuka pintu kemudahan dalam segala urusan." },
+            "Al-'Alim": { arab: "العليم", value: 150, khasiat: "Untuk kecerdasan dan keterbukaan ilmu." },
+            "Al-Qabidh": { arab: "القابض", value: 903, khasiat: "Untuk perlindungan dari keburukan dan kefakiran." },
+            "Al-Basith": { arab: "الباسط", value: 72, khasiat: "Untuk melapangkan kesulitan." },
+            "Al-Khafidh": { arab: "الخافض", value: 1481, khasiat: "Untuk merendahkan orang yang sombong." },
+            "Ar-Rafi'": { arab: "الرافع", value: 351, khasiat: "Untuk mengangkat derajat dan kedudukan." },
+            "Al-Mu'izz": { arab: "المعز", value: 117, khasiat: "Untuk kemuliaan diri." },
+            "Al-Mudzhill": { arab: "المذل", value: 770, khasiat: "Untuk perlindungan dari gangguan." },
+            "As-Sami'": { arab: "السميع", value: 211, khasiat: "Agar doa-doa dikabulkan." },
+            "Al-Bashir": { arab: "البصير", value: 302, khasiat: "Untuk ketajaman mata hati." },
+            "Al-Hakam": { arab: "الحكم", value: 68, khasiat: "Untuk kebijaksanaan dalam mengambil keputusan." },
+            "Al-'Adl": { arab: "العدل", value: 104, khasiat: "Untuk sifat adil dan bijak." },
+            "Al-Lathif": { arab: "اللطيف", value: 129, khasiat: "Untuk kelembutan hati dan kemudahan urusan." },
+            "Al-Khabir": { arab: "الخبير", value: 812, khasiat: "Untuk mendapatkan petunjuk atas masalah." },
+            "Al-Halim": { arab: "الحليم", value: 88, khasiat: "Untuk menahan amarah dan kesabaran." },
+            "Al-'Azhim": { arab: "العظيم", value: 1020, khasiat: "Untuk keagungan derajat." },
+            "Al-Ghafur": { arab: "الغفور", value: 1286, khasiat: "Untuk kemudahan ampunan dosa." },
+            "Asy-Syakur": { arab: "الشكور", value: 526, khasiat: "Untuk syukur atas segala nikmat." },
+            "Al-'Aliyy": { arab: "العلي", value: 110, khasiat: "Untuk ketinggian derajat." },
+            "Al-Kabir": { arab: "الكبير", value: 232, khasiat: "Untuk kemuliaan posisi." },
+            "Al-Hafizh": { arab: "الحفيظ", value: 998, khasiat: "Untuk perlindungan dari segala mara bahaya." },
+            "Al-Muqit": { arab: "المقيت", value: 550, khasiat: "Untuk kecukupan kebutuhan." },
+            "Al-Hasib": { arab: "الحسيب", value: 80, khasiat: "Untuk perlindungan dari keresahan." },
+            "Al-Jalil": { arab: "الجليل", value: 73, khasiat: "Untuk kewibawaan." },
+            "Al-Karim": { arab: "الكريم", value: 270, khasiat: "Untuk kemurahan hati." },
+            "Ar-Raqib": { arab: "الرقيب", value: 312, khasiat: "Untuk merasa selalu diawasi Allah agar tidak berbuat dosa." },
+            "Al-Mujib": { arab: "المجيب", value: 55, khasiat: "Agar doa segera dijawab." },
+            "Al-Wasi'": { arab: "الواسع", value: 137, khasiat: "Untuk kelapangan rezeki." },
+            "Al-Hakim": { arab: "الحكيم", value: 78, khasiat: "Untuk ilmu pengetahuan yang mendalam." },
+            "Al-Wadud": { arab: "الودود", value: 20, khasiat: "Agar dicintai makhluk Allah." },
+            "Al-Majid": { arab: "المجيد", value: 57, khasiat: "Untuk kemuliaan hidup." },
+            "Al-Ba'its": { arab: "الباعث", value: 573, khasiat: "Untuk semangat hidup dan kebangkitan batin." },
+            "Asy-Syahid": { arab: "الشهيد", value: 319, khasiat: "Untuk keberanian dalam kebenaran." },
+            "Al-Haqq": { arab: "الحق", value: 108, khasiat: "Untuk keteguhan pendirian." },
+            "Al-Wakil": { arab: "الوكيل", value: 66, khasiat: "Untuk berserah diri kepada Allah dalam urusan." },
+            "Al-Qawiyyy": { arab: "القوي", value: 116, khasiat: "Untuk kekuatan batin." },
+            "Al-Matin": { arab: "المتين", value: 500, khasiat: "Untuk keteguhan hati." },
+            "Al-Waliyy": { arab: "الولي", value: 46, khasiat: "Agar selalu dalam lindungan Allah." },
+            "Al-Hamid": { arab: "الحميد", value: 62, khasiat: "Agar selalu terpuji akhlaknya." },
+            "Al-Muhshi": { arab: "المحصي", value: 148, khasiat: "Untuk ketelitian." },
+            "Al-Mubdi'": { arab: "المبدئ", value: 56, khasiat: "Untuk kemudahan dalam memulai pekerjaan." },
+            "Al-Mu'id": { arab: "المعيد", value: 124, khasiat: "Untuk mengembalikan sesuatu yang hilang." },
+            "Al-Muhyi": { arab: "الحي", value: 68, khasiat: "Untuk menghidupkan hati yang mati." },
+            "Al-Mumit": { arab: "المميت", value: 490, khasiat: "Untuk mematikan hawa nafsu." },
+            "Al-Hayyu": { arab: "الحي", value: 18, khasiat: "Untuk umur panjang yang berkah." },
+            "Al-Qayyum": { arab: "القيوم", value: 156, khasiat: "Untuk kemandirian." },
+            "Al-Wajid": { arab: "الواجد", value: 14, khasiat: "Untuk kekayaan batin." },
+            "Al-Majid_": { arab: "الماجد", value: 48, khasiat: "Untuk kemuliaan." },
+            "Al-Wahid": { arab: "الواحد", value: 19, khasiat: "Untuk ketauhidan yang mantap." },
+            "Al-Ahad": { arab: "الأحد", value: 13, khasiat: "Untuk kesatuan hati." },
+            "As-Samad": { arab: "الصمد", value: 134, khasiat: "Agar segala hajat terpenuhi." },
+            "Al-Qadir": { arab: "القادر", value: 305, khasiat: "Untuk kemampuan menghadapi masalah." },
+            "Al-Muqtadir": { arab: "المقتدر", value: 744, khasiat: "Untuk kekuatan menghadapi kesulitan." },
+            "Al-Muqaddim": { arab: "المقدم", value: 184, khasiat: "Agar selalu terdepan dalam kebaikan." },
+            "Al-Mu'akhkhir": { arab: "المؤخر", value: 846, khasiat: "Untuk menjauhkan dari keburukan." },
+            "Al-Awwal": { arab: "الأول", value: 37, khasiat: "Untuk awal yang baik." },
+            "Al-Akhir": { arab: "الآخر", value: 801, khasiat: "Untuk akhir yang baik (khusnul khotimah)." },
+            "Azh-Zhahir": { arab: "الظاهر", value: 1106, khasiat: "Untuk keterbukaan kebenaran." },
+            "Al-Bathin": { arab: "الباطن", value: 62, khasiat: "Untuk kedalaman spiritual." },
+            "Al-Wali": { arab: "الوالي", value: 47, khasiat: "Untuk memimpin dengan bijak." },
+            "Al-Muta'ali": { arab: "المتعالي", value: 541, khasiat: "Untuk kemuliaan derajat." },
+            "Al-Barr": { arab: "البر", value: 202, khasiat: "Untuk kebaikan hati." },
+            "At-Tawwab": { arab: "التواب", value: 409, khasiat: "Agar pintu taubat selalu terbuka." },
+            "Al-Muntaqim": { arab: "المنتقم", value: 630, khasiat: "Untuk perlindungan dari orang zalim." },
+            "Al-'Afuww": { arab: "العفو", value: 156, khasiat: "Agar mudah memberi maaf." },
+            "Ar-Ra'uf": { arab: "الرؤوف", value: 287, khasiat: "Untuk sifat penyayang." },
+            "Malikul-Mulk": { arab: "مالك الملك", value: 212, khasiat: "Untuk kemantapan urusan." },
+            "Dzul-Jalali wal-Ikram": { arab: "ذو الجلال والإكرام", value: 1100, khasiat: "Untuk kemuliaan yang agung." },
+            "Al-Muqsit": { arab: "المقسط", value: 209, khasiat: "Untuk sifat adil." },
+            "Al-Jami'": { arab: "الجامع", value: 114, khasiat: "Untuk menyatukan yang bercerai." },
+            "Al-Ghaniyy": { arab: "الغني", value: 1060, khasiat: "Untuk kecukupan rezeki." },
+            "Al-Mughni": { arab: "المغني", value: 1100, khasiat: "Untuk kekayaan jiwa." },
+            "Al-Mani'": { arab: "المانع", value: 161, khasiat: "Untuk perlindungan." },
+            "Adh-Dharr": { arab: "الضار", value: 1001, khasiat: "Untuk perlindungan dari musuh." },
+            "An-Nafi'": { arab: "النافع", value: 201, khasiat: "Agar memberikan manfaat bagi sesama." },
+            "An-Nur": { arab: "النور", value: 256, khasiat: "Untuk cahaya dalam kehidupan." },
+            "Al-Hadi": { arab: "الهادي", value: 20, khasiat: "Untuk mendapat petunjuk Allah." },
+            "Al-Badi'": { arab: "البديع", value: 86, khasiat: "Untuk inovasi dan kreativitas." },
+            "Al-Baqi": { arab: "الباقي", value: 113, khasiat: "Untuk keberkahan yang kekal." },
+            "Al-Warits": { arab: "الوارث", value: 707, khasiat: "Untuk keturunan yang baik." },
+            "Ar-Rasyid": { arab: "الرشيد", value: 514, khasiat: "Untuk kecerdasan dan bimbingan." },
+            "As-Shabur": { arab: "الصبور", value: 298, khasiat: "Untuk kesabaran yang tinggi." }
+        };
+
+        const select = document.getElementById('asmaulSelect');
+        Object.keys(asmaulHusna).forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name + " (" + asmaulHusna[name].arab + ")";
+            select.appendChild(opt);
+        });
+
+        function selectAsmaul() {
+            const val = select.value;
+            if (val && asmaulHusna[val]) {
+                document.getElementById('arabicInput').value = asmaulHusna[val].arab;
+                calculateJumal();
+            }
+        }
+
+        function calculateJumal() {
+            const input = document.getElementById('arabicInput').value;
+            const cleanInput = input.replace(/[\u064B-\u065F]/g, '');
+            let total = 0;
+            const breakdown = [];
+
+            for (let char of cleanInput) {
+                if (abjadMap[char]) {
+                    total += abjadMap[char];
+                    breakdown.push({ letter: char, value: abjadMap[char] });
+                }
+            }
+
+            if (breakdown.length > 0) {
+                document.getElementById('resultArea').classList.remove('hidden');
+                document.getElementById('totalValue').innerText = total;
+                
+                const foundName = Object.keys(asmaulHusna).find(k => asmaulHusna[k].arab === cleanInput);
+                const khasiatArea = document.getElementById('khasiatArea');
+                if (foundName) {
+                    khasiatArea.classList.remove('hidden');
+                    document.getElementById('khasiatText').innerText = asmaulHusna[foundName].khasiat;
+                } else {
+                    khasiatArea.classList.add('hidden');
+                }
+                
+                const breakdownEl = document.getElementById('letterBreakdown');
+                breakdownEl.innerHTML = breakdown.map(item => `
+                    <span class="inline-block bg-slate-100 px-2 py-1 rounded">
+                        <span class="font-arabic text-lg">${item.letter}</span> (${item.value})
+                    </span>
+                `).join(' + ');
+
+                renderWafaq();
+            } else {
+                alert("Masukkan huruf Arab yang valid.");
+            }
+        }
+
+        function renderWafaq() {
+            const gridEl = document.getElementById('wafaqGrid');
+            const matrix = [4, 9, 2, 3, 5, 7, 8, 1, 6];
+            gridEl.innerHTML = matrix.map(num => `
+                <div class="h-20 w-20 flex flex-col items-center justify-center bg-slate-900 text-gold rounded-lg border border-gold">
+                    <span class="text-3xl font-arabic">${easternArabic[num]}</span>
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+</html>
